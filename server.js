@@ -33,6 +33,14 @@ app.prepare().then(() => {
   wss.on("close", () => console.log("WebSocket was closed"));
   wss.on("error", (err) => console.log("WebSocket error", err));
 
+  if (!dev) {
+    server.on("upgrade", (req, socket, head) => {
+      wss.handleUpgrade(req, socket, head, (ws) => {
+        wss.emit("connection", ws, req);
+      });
+    });
+  }
+
   server.listen(port, (err) => {
     if (err) throw err;
     console.log(
