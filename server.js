@@ -6,7 +6,8 @@ import { WebSocketServer } from "ws";
 import { parse } from "url";
 
 const port = parseInt(process.env.PORT || "3000", 10);
-const app = next({ dev: process.env.NODE_ENV !== "production" });
+const dev = process.env.NODE_ENV !== "production";
+const app = next({ dev });
 const handle = app.getRequestHandler();
 
 app.prepare().then(() => {
@@ -18,7 +19,7 @@ app.prepare().then(() => {
       console.log("errrr", err);
     });
   });
-  const wss = new WebSocketServer({ noServer: true });
+  const wss = new WebSocketServer(dev ? { port: port + 1 } : { server });
 
   wss.on("connection", (ws) => {
     console.log("WebSocket client connected");
@@ -32,19 +33,10 @@ app.prepare().then(() => {
   wss.on("close", () => console.log("WebSocket was closed"));
   wss.on("error", (err) => console.log("WebSocket error", err));
 
-  server.on("upgrade", (req, socket, head) => {
-    if (!req.url) return;
-
-    const { pathname } = parse(req.url, true);
-    if (pathname !== "/_next/webpack-hmr") {
-      wss.handleUpgrade(req, socket, head, (ws) => {
-        wss.emit("connection", ws, req);
-      });
-    }
-  });
-
   server.listen(port, (err) => {
     if (err) throw err;
-    console.log(`> Ready on http://localhost:${port}`);
+    console.log(
+      `> [${dev ? "DEV" : "PROD"}] Ready on http://localhost:${port}`
+    );
   });
 });
